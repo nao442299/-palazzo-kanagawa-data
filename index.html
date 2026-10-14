@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1424"><meta name="description" content="神奈川県のパラッツォ5店舗の公開台データを日別・機種別・台番号別に確認">
+<title>PALAZZO DATA | 神奈川5店舗</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;color:#e8edf6;background:#0a1020;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#131e33 0,#0a1020 210px)}
+button,input,select{font:inherit}button{cursor:pointer}a{color:#8dbafb;text-decoration:none}
+header,.wrap{max-width:1030px;margin:auto;padding-left:18px;padding-right:18px}
+header{padding-top:24px;padding-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{font-size:24px;letter-spacing:.08em;font-weight:850}.brand span{color:#f5b951}
+.subtitle{font-size:11px;color:#95a6c4;margin-top:4px;letter-spacing:.04em}.live{border:1px solid #3c536d;border-radius:20px;padding:8px 12px;font-size:12px;background:#172539;color:#c5d3e8;white-space:nowrap}
+.live.off{color:#f8cd82;border-color:#8a6237}
+.controls{display:grid;grid-template-columns:1fr 180px;gap:12px;margin-bottom:20px}
+.control{display:block;background:#151f32;border:1px solid #2c3b56;border-radius:14px;padding:8px 13px}
+.control small{display:block;font-size:11px;color:#9dafca;margin-bottom:3px}.control select,.control input{width:100%;border:0;color:#f4f7fd;background:transparent;outline:0;font-size:15px;min-height:28px}
+select option{color:#171b25}input::-webkit-calendar-picker-indicator{filter:invert(.85)}
+.notice{padding:13px 15px;border:1px solid #705634;background:#342716;color:#f4d4a1;border-radius:14px;font-size:12px;line-height:1.7;margin-bottom:20px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px}
+.metric{border:1px solid #2b3c55;background:#141f32;border-radius:16px;padding:14px 15px}
+.metric label{display:block;color:#92a4c0;font-size:11px}.metric b{display:block;font-size:25px;margin-top:10px;letter-spacing:-.025em;font-variant-numeric:tabular-nums}
+h2{font-size:17px;font-weight:750;margin:14px 0}h3{font-size:14px;margin:0 0 7px}
+.sectionheading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:18px 0 10px}
+.help{font-size:11px;color:#91a5c6}.pill{font-size:11px;color:#d2e7fa;padding:5px 9px;border-radius:100px;background:#27415b}
+.card{border:1px solid #2b3d55;background:#141e30;border-radius:15px;padding:15px;margin-bottom:10px}
+.cardhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.name{font-size:15px;font-weight:750;line-height:1.5;overflow-wrap:anywhere}
+.mini{font-size:11px;color:#92a4be;margin-top:5px;line-height:1.4}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;border-top:1px solid #2b3b51;margin-top:13px;padding-top:13px}
+.stat small{display:block;font-size:10px;color:#9cacbf}.stat strong{display:block;font-size:14px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;padding:5px 9px;border-radius:7px;font-weight:700;font-size:10px;color:#a6d0f8;background:#1e3751}
+.tag.warn{background:#493620;color:#f5c888}.tag.ok{background:#153d36;color:#9ae6cb}
+.toolrow{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.btn{background:#244260;border:1px solid #467094;border-radius:11px;color:#f3f8fc;padding:11px 13px;font-weight:650;font-size:12px}
+.btn.secondary{background:#172338;border-color:#36465e}.btn:disabled{opacity:.45}
+.empty{padding:35px 20px;text-align:center;background:#111b2d;border:1px dashed #3a4a66;border-radius:15px;margin-bottom:15px}
+.empty .main{font-size:16px;font-weight:700;color:#e0e8f6}.empty p{color:#9eacc1;font-size:12px;line-height:1.8;margin-bottom:0}
+.panel{display:none}.panel.active{display:block}
+.suffixes{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.suffix{padding:14px 5px;text-align:center;border:1px solid #2b405c;background:#142338;border-radius:14px}
+.suffix .digit{font-size:25px;color:#f2bb61;font-weight:800}.suffix .count{font-size:11px;color:#a3b5cb;margin-top:5px}.suffix .games{font-size:10px;color:#cbd5e7;margin-top:6px}
+.log{margin-bottom:10px;border-left:3px solid #6c819e;padding:5px 12px 5px 13px;background:#152034;border-radius:0 10px 10px 0;font-size:12px;line-height:1.55}
+.log.error{border-color:#e2a45e}.log.ok{border-color:#53b398}
+.log p{margin:5px 0;color:#abbad1;overflow-wrap:anywhere}
+.legend{font-size:12px;color:#a4b4ca;line-height:1.8}
+footer{font-size:11px;color:#7185a3;padding:25px 0 100px;text-align:center}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.tab{padding:10px 15px;background:#152338;border:1px solid #294362;border-radius:10px;color:#adbdd1;font-size:12px;font-weight:700}
+.tab.active{background:#28476a;color:#fff;border-color:#5b8cc4}
+nav.bottom{display:none}
+@media(max-width:700px){
+header{padding-top:18px;padding-bottom:15px}.brand{font-size:21px}.subtitle{font-size:10px}
+.controls{grid-template-columns:1fr 135px;gap:8px}.control{padding:7px 9px}.control select,.control input{font-size:12px}
+.metrics{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:15px}.metric b{font-size:24px}.metric{padding:13px}
+.stats{gap:4px}.stat strong{font-size:13px}.stat small{font-size:10px}
+.tabs{display:none}nav.bottom{display:flex;position:fixed;z-index:5;bottom:0;left:0;right:0;background:#111d30ee;border-top:1px solid #3b4e66;backdrop-filter:blur(15px);padding:9px 5px calc(9px + env(safe-area-inset-bottom));justify-content:space-around}
+nav.bottom button{display:flex;align-items:center;flex-direction:column;gap:4px;color:#8fabc9;background:transparent;border:0;font-size:10px;min-width:54px;padding:3px 0}
+nav.bottom button strong{font-size:19px;line-height:23px;font-weight:500}nav.bottom button.active{color:#f7c570}
+.suffixes{grid-template-columns:repeat(5,1fr);gap:6px}.suffix .digit{font-size:21px}.suffix{padding:12px 2px}
+}
+</style>
+</head>
+<body>
+<header><div><div class="brand">PALAZZO <span>DATA</span></div><div class="subtitle">神奈川県 5店舗 ｜ 公開データ集計</div></div><div id="connection" class="live">読み込み中</div></header>
+<main class="wrap">
+<div class="controls"><label class="control"><small>店舗を選択</small><select id="store"><option value="all">神奈川5店舗すべて</option></select></label><label class="control"><small>対象日</small><input type="date" id="date"></label></div>
+<div class="notice" id="notice">実データの自動取得は未検証です。表示される数値は取り込まれた実データだけです。データがない場合は0件と表示します。</div>
+<div class="metrics"><div class="metric"><label>集計台数</label><b id="sum-units">—</b></div><div class="metric"><label>集計G数</label><b id="sum-games">—</b></div><div class="metric"><label>機種・店舗の組合せ</label><b id="sum-machines">—</b></div><div class="metric"><label>取得済み店舗数</label><b id="sum-stores">—</b></div></div>
+<div class="tabs" id="top-tabs"><button class="tab active" data-tab="machines">機種別</button><button class="tab" data-tab="units">台別</button><button class="tab" data-tab="suffix">末尾</button><button class="tab" data-tab="history">履歴</button><button class="tab" data-tab="sources">収集状況</button></div>
+<section class="panel active" id="panel-machines"><div class="sectionheading"><h2>機種別の集計</h2><span id="machine-count" class="pill">—</span></div><div id="machine-list"></div></section>
+<section class="panel" id="panel-units"><div class="sectionheading"><h2>台番号別のデータ</h2><span id="unit-count" class="pill">—</span></div><div id="unit-list"></div></section>
+<section class="panel" id="panel-suffix"><div class="sectionheading"><h2>末尾番号別の集計</h2><span class="help">対象台数・G数</span></div><div id="suffix-list" class="suffixes"></div><p class="legend">台番号の一番右の数字（0〜9）ごとの集計です。高設定の確定を意味しません。</p></section>
+<section class="panel" id="panel-history"><div class="sectionheading"><h2>過去の取得履歴</h2><span class="help">保存済みデータのみ</span></div><div id="history-list"></div></section>
+<section class="panel" id="panel-sources"><div class="sectionheading"><h2>店舗・収集状況</h2></div><div id="sources-list"></div><div class="sectionheading"><h2>収集の実行履歴</h2></div><div id="logs-list"></div><p class="legend">収集プログラムは未検証のため、初期状態では無効です。取得元の規約の確認とHTML解析の検証が必要です。</p></section>
+<div class="toolrow"><button id="refresh" class="btn">↻ データ更新</button><button id="export" class="btn secondary">↓ 当日のCSV保存</button></div>
+<p class="legend">本サイトは非公式の個人開発ツールです。掲載数値は元データの完全性・正確さを保証しません。設定1〜6の推定や「全台系」の判定は現時点で未実装です。取得元サイトとは無関係です。</p>
+<footer>PALAZZO DATA Kanagawa ・ 掲載情報は検証用ダッシュボードです</footer>
+</main>
+<nav class="bottom" id="bottom-tabs"><button data-tab="machines" class="active"><strong>▤</strong>機種別</button><button data-tab="units"><strong>▦</strong>台別</button><button data-tab="suffix"><strong>◉</strong>末尾</button><button data-tab="history"><strong>◷</strong>履歴</button><button data-tab="sources"><strong>⚙</strong>取得状況</button></nav>
+<script>
+const $=id=>document.getElementById(id);
+const state={tab:"machines",status:null,data:null};
+const fmt=v=>new Intl.NumberFormat("ja-JP").format(Number(v||0));
+const esc=v=>String(v??"").replace(/[&<>"']/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[x]));
+const empty=(name,detail)=>'<div class="empty"><div class="main">'+esc(name)+'</div><p>'+esc(detail)+'</p></div>';
+const req=async u=>{const r=await fetch(u,{cache:"no-store"});if(!r.ok)throw Error("通信失敗 HTTP "+r.status);return r.json()};
+const q=()=>"?day="+encodeURIComponent($("date").value)+"&store="+encodeURIComponent($("store").value);
+function changeTab(name){state.tab=name;document.querySelectorAll(".panel").forEach(e=>e.classList.toggle("active",e.id==="panel-"+name));document.querySelectorAll("[data-tab]").forEach(e=>e.classList.toggle("active",e.dataset.tab===name));if(name==="history")loadHistory();if(name==="sources")loadSources();window.scrollTo({top:0,behavior:"smooth"})}
+function box(title,subtitle,tag,figures){return '<div class="card"><div class="cardhead"><div><div class="name">'+esc(title)+'</div><div class="mini">'+esc(subtitle)+'</div></div>'+ (tag?'<span class="tag">'+esc(tag)+'</span>':"")+'</div><div class="stats">'+figures.map(f=>'<div class="stat"><small>'+esc(f[0])+'</small><strong>'+esc(f[1])+'</strong></div>').join("")+'</div></div>'}
+function showData(d){
+state.data=d;$("sum-units").textContent=fmt(d.total_units);$("sum-games").textContent=fmt(d.total_games);$("sum-machines").textContent=fmt(d.total_machines);
+$("sum-stores").textContent=fmt(new Set(d.units.map(u=>u.store_id)).size);
+$("machine-count").textContent=fmt(d.machines.length)+"機種";$("unit-count").textContent=fmt(d.units.length)+"台";
+$("machine-list").innerHTML=d.machines.length?d.machines.map(u=>box(u.machine,u.store_name,u.count+"台",[["通常時G",fmt(u.games)],["RB",fmt(u.rb)],["RB確率",u.rb_rate?"1/"+u.rb_rate:"—"],["BB+RB",u.total_rate?"1/"+u.total_rate:"—"]])).join(""):empty("この日の機種データはありません","対象の日付を変更するか、「取得状況」からデータ収集の状態を確認してください。");
+$("unit-list").innerHTML=d.units.length?d.units.map(u=>box(u.machine,u.store_id+" ・ 台番号 "+u.unit_no,u.source==="csv"?"CSV":"取得",[["通常時G",fmt(u.games)],["BB",u.bb===null?"—":fmt(u.bb)],["RB",u.rb===null?"—":fmt(u.rb)],["差枚",u.diff===null?"—":fmt(u.diff)]] )).join(""):empty("台番号別データはありません","まだデータが登録されていません。");
+$("suffix-list").innerHTML=d.suffixes.map(v=>'<div class="suffix"><div class="digit">'+v.suffix+'</div><div class="count">'+fmt(v.count)+'台</div><div class="games">'+fmt(v.games)+'G</div></div>').join("");
+}
+async function loadHistory(){
+try{const d=await req("/api/history?store="+encodeURIComponent($("store").value));$("history-list").innerHTML=d.rows.length?d.rows.map(u=>box(u.date,u.store_id,null,[["台数",fmt(u.units)],["総G",fmt(u.games)],["差枚",u.diff==null?"—":fmt(u.diff)],["店舗","1"]])).join(""):empty("保存済みの履歴はありません","データ取得後に日付ごとの履歴を確認できます。")}catch(e){$("history-list").innerHTML=empty("読み込みエラー",e.message)}}
+async function loadSources(){
+try{const s=state.status||await req("/api/status");$("sources-list").innerHTML=s.stores.map(x=>'<div class="card"><div class="cardhead"><div><div class="name">'+esc(x.name)+'</div><div class="mini">公開データページ：<a target="_blank" rel="noopener" href="'+esc(x.url)+'">'+esc(x.source_id)+'</a></div></div><span class="tag '+(x.units?"ok":"warn")+'">'+(x.units?"保存済み":"未取得")+'</span></div><div class="mini">保存台数 '+fmt(x.units)+'件 ／ 取得日数 '+fmt(x.days)+'日 ／ 最新 '+esc(x.latest||"—")+'</div></div>').join("");
+const h=await req("/api/logs");$("logs-list").innerHTML=h.rows.length?h.rows.map(v=>'<div class="log '+(v.status==="ok"?"ok":"error")+'"><b>'+esc(v.created_at)+' / '+esc(v.store_id)+'</b><p>'+esc(v.status)+' ・ '+fmt(v.records)+'件 ・ '+esc(v.message)+'</p></div>').join(""):empty("収集履歴はありません","自動収集はまだ実行されていません。")}catch(e){$("logs-list").innerHTML=empty("読み込みエラー",e.message)}}
+async function refresh(){
+$("connection").textContent="通信中…";
+try{const s=await req("/api/status");state.status=s;
+const st=$("store");const old=st.value;st.innerHTML='<option value="all">神奈川5店舗すべて</option>'+s.stores.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join("");st.value=old||"all";
+if(!$("date").value)$("date").value=s.date;
+const d=await req("/api/data"+q());showData(d);
+$("connection").textContent="接続済み";$("connection").className="live";
+if(!s.terms_confirmed){$("notice").textContent="実データの自動取得はまだ無効です。表示されるのは保存済みデータだけです。取得元サイトの規約・ページ形式を確認するまで、自動取得は開始しません。"}
+else if(!s.auto_collect){$("notice").textContent="収集の利用条件は確認済みですが自動収集は停止中です。"}
+else $("notice").textContent="自動収集が設定されています。収集に失敗した場合は「取得状況」で内容を確認してください。";
+if(state.tab==="history")await loadHistory();if(state.tab==="sources")await loadSources();
+}catch(e){$("connection").textContent="接続エラー";$("connection").className="live off";$("notice").textContent="サーバーからデータを取得できませんでした："+e.message}}
+document.querySelectorAll("[data-tab]").forEach(btn=>btn.addEventListener("click",()=>changeTab(btn.dataset.tab)));
+$("store").addEventListener("change",refresh);$("date").addEventListener("change",refresh);
+$("refresh").addEventListener("click",refresh);$("export").addEventListener("click",()=>{const date=encodeURIComponent($("date").value);location.href="/api/export?day="+date});
+refresh();
+</script>
+</body></html>

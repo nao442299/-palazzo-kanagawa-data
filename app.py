@@ -3,6 +3,7 @@
 """
 import csv
 import io
+import base64
 import os
 import re
 import hmac
@@ -19,12 +20,13 @@ from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException, Header, Request
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, Response
 
 TZ = ZoneInfo("Asia/Tokyo")
 HERE = Path(__file__).resolve().parent
 DB = Path(os.getenv("DATABASE_PATH", str(HERE / "palazzo.sqlite3")))
 TOKEN = os.getenv("ADMIN_TOKEN", "")
+SITE_PASSWORD = os.getenv("SITE_PASSWORD", "")
 TERMS = os.getenv("SOURCE_TERMS_ACCEPTED", "0") == "1"
 AUTO = os.getenv("AUTO_COLLECT", "0") == "1"
 STORES = [
@@ -80,11 +82,22 @@ def log_run(s,status,count=0,message=""):
     with conn() as c:
         c.execute("INSERT INTO logs(created_at,store_id,status,records,message) VALUES(?,?,?,?,?)",
             (now(),s,status,count,str(message)[:800]))
+def basic_ok(auth):
+    if not SITE_PASSWORD or not auth or not auth.startswith("Basic "):
+        return False
+    try:
+        decoded=base64.b64decode(auth[6:],validate=True).decode("utf-8")
+        username,password=decoded.split(":",1)
+        return hmac.compare_digest(username,"palazzo") and hmac.compare_digest(password,SITE_PASSWORD)
+    except (ValueError,UnicodeDecodeError):
+        return False
 def check_token(auth):
+    if basic_ok(auth):
+        return
     if not TOKEN:
-        raise HTTPException(503,"管理トークンが設定されていません")
+        raise HTTPException(503,"管理認証が設定されていません")
     if not auth or not auth.startswith("Bearer ") or not hmac.compare_digest(auth[7:],TOKEN):
-        raise HTTPException(403,"管理トークンが違います")
+        raise HTTPException(403,"管理者認証が必要です")
 
 def valid_date(value):
     try:
@@ -181,7 +194,16 @@ async def lifespan(app):
     yield
     if task:task.cancel()
 
-app=FastAPI(title="PALAZZO DATA 神奈川5店舗",lifespan=lifespan)
+app=FastAPI(title="PALAZZO DATA 神奈川5店舗",lifespan=lifespan,docs_url=None,redoc_url=None,openapi_url=None)
+@app.middleware("http")
+async def restrict_access(request:Request,call_next):
+    if request.url.path == "/health":
+        return await call_next(request)
+    if SITE_PASSWORD and not basic_ok(request.headers.get("Authorization")):
+        return Response("認証が必要です",status_code=401,
+                headers={"WWW-Authenticate":'Basic realm="PALAZZO DATA"'})
+    return await call_next(request)
+
 @app.get("/")
 def index():
     return HTMLResponse((HERE/"index.html").read_text(encoding="utf-8"))
@@ -268,3 +290,29 @@ def collect(authorization:str|None=Header(None)):
     if not TERMS:raise HTTPException(409,"取得元の利用条件を確認してから有効化してください")
     if not start_job():raise HTTPException(409,"収集を実行中")
     return {"message":"収集を開始しました"}
+
+@app.post("/api/manual")
+async def manual(request:Request,authorization:str|None=Header(None)):
+    check_token(authorization)
+    try:
+        obj=await request.json()
+    except Exception:
+        raise HTTPException(400,"JSON形式で入力してください")
+    if not isinstance(obj,dict):
+        raise HTTPException(400,"登録内容が不正です")
+    store=obj.get("store_id")
+    if store not in STORE_MAP:raise HTTPException(400,"店舗を選択してください")
+    day=valid_date(obj.get("date"))
+    machine=str(obj.get("machine") or "").strip()[:100]
+    unit=str(obj.get("unit_no") or "").strip()
+    games=cleaned_number(obj.get("games"))
+    if not machine or len(machine)<2:raise HTTPException(400,"機種名を入力してください")
+    if not unit.isdigit() or len(unit)>8:raise HTTPException(400,"台番号が不正です")
+    if games is None or games<0 or games>150000:raise HTTPException(400,"ゲーム数が不正です")
+    values={"store_id":store,"date":day,"machine":machine,"unit_no":unit,"games":games}
+    for k in ("bb","rb","diff"):
+        value=cleaned_number(obj.get(k))
+        if value is not None and (value<-150000 or value>150000 or (k in ("bb","rb") and value<0)):
+            raise HTTPException(400,k+"の数字が不正です")
+        values[k]=value
+    return {"saved":store_rows([values],"manual")}

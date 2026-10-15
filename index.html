@@ -108,8 +108,8 @@ try{const s=await req("/api/status");state.status=s;
 const st=$("store");const old=st.value;st.innerHTML='<option value="all">神奈川5店舗すべて</option>'+s.stores.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join("");st.value=old||"all";
 if(!$("date").value)$("date").value=s.date;
 const d=await req("/api/data"+q());showData(d);
-$("connection").textContent="接続済み";$("connection").className="live";
-if(!s.terms_confirmed){$("notice").textContent="実データの自動取得はまだ無効です。表示されるのは保存済みデータだけです。取得元サイトの規約・ページ形式を確認するまで、自動取得は開始しません。"}
+$("connection").textContent="サーバー稼働中";$("connection").className="live";
+if(!s.terms_confirmed){$("notice").textContent="出玉データの取得は未稼働です。画面上の「サーバー稼働中」は通信の状態で、実データの収集成功を意味しません。データ取得元の利用条件と機種別ページの形式を確認するまで、自動収集は行いません。"}
 else if(!s.auto_collect){$("notice").textContent="収集の利用条件は確認済みですが自動収集は停止中です。"}
 else $("notice").textContent="自動収集が設定されています。収集に失敗した場合は「取得状況」で内容を確認してください。";
 if(state.tab==="history")await loadHistory();if(state.tab==="sources")await loadSources();

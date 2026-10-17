@@ -19,6 +19,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
+import collector as site_collector
 from fastapi import FastAPI, HTTPException, Header, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, Response
 
@@ -154,21 +155,39 @@ def parse_tables(html, store_id):
     return result
 
 def collect_all():
+    """Collect only reachable public store/model pages after checking robots.txt."""
     results=[]
-    for s in STORES:
+    try:
+        robots=site_collector.robots_policy()
+    except Exception as exc:
+        reason=str(exc)[:260]
+        for store in STORES:
+            log_run(store["id"],"blocked",0,reason)
+            results.append({"store":store["name"],"status":"blocked","message":reason})
+        return results
+    for store in STORES:
         try:
-            html=fetch_public(s["url"])
-            values=parse_tables(html,s["id"])
-            if not values:raise RuntimeError("台データ表を認識できません。HTML構造を確認する必要があります")
-            n=store_rows(values,"collector")
-            log_run(s["id"],"ok",n,"公開ページを解析")
-            results.append({"store":s["name"],"status":"ok","records":n})
+            if not robots.can_fetch(site_collector.UA,store["url"]):
+                raise site_collector.CollectionError("robots.txtでこの店舗ページへのアクセスは禁止されています")
+            scan=site_collector.scan_one(store,robots,today())
+            values=scan["rows"]
+            if not values:
+                raise site_collector.CollectionError(
+                    scan["note"]+"（訪問"+str(scan["scanned"])+"ページ）")
+            count=store_rows(values,"collector")
+            detail=str(scan["scanned"])+"ページ解析"
+            log_run(store["id"],"ok",count,detail)
+            results.append({"store":store["name"],"status":"ok",
+                            "records":count,"pages":scan["scanned"]})
         except Exception as exc:
-            log_run(s["id"],"error",0,str(exc))
-            results.append({"store":s["name"],"status":"error","message":str(exc)[:160]})
+            reason=str(exc)[:260]
+            log_run(store["id"],"blocked" if "robots.txt" in reason or "HTTP 403" in reason
+                    or "HTTP 401" in reason or "HTTP 429" in reason else "error",0,reason)
+            results.append({"store":store["name"],"status":"error","message":reason})
         import time
-        time.sleep(2)
+        time.sleep(3)
     return results
+
 def job():
     try: STATE["result"]=collect_all()
     finally:
@@ -214,7 +233,7 @@ def status():
     counts=rows("SELECT store_id,COUNT(*) units,COUNT(DISTINCT date) days,MAX(date) latest FROM units GROUP BY store_id")
     latest={x["store_id"]:x for x in counts}
     return {"date":today(),"running":STATE["running"],"last_result":STATE["result"],
-    "terms_confirmed":TERMS,"auto_collect":AUTO,"admin_ready":bool(TOKEN),
+    "terms_confirmed":TERMS,"auto_collect":AUTO,"admin_ready":bool(TOKEN or SITE_PASSWORD),
     "stores":[dict(s,units=latest.get(s["id"],{}).get("units",0),
     days=latest.get(s["id"],{}).get("days",0),
     latest_date=latest.get(s["id"],{}).get("latest")) for s in STORES]}
@@ -284,12 +303,19 @@ async def import_csv(request:Request,authorization:str|None=Header(None)):
             "games":games,"bb":cleaned_number(r.get("bb")),"rb":cleaned_number(r.get("rb")),
             "diff":cleaned_number(r.get("diff"))})
     return {"saved":store_rows(incoming)}
+@app.get("/api/diagnose")
+def diagnose(authorization:str|None=Header(None)):
+    check_token(authorization)
+    result=site_collector.diagnostics()
+    return {"checked_at":now(),**result}
+
 @app.post("/api/collect")
 def collect(authorization:str|None=Header(None)):
     check_token(authorization)
-    if not TERMS:raise HTTPException(409,"取得元の利用条件を確認してから有効化してください")
-    if not start_job():raise HTTPException(409,"収集を実行中")
-    return {"message":"収集を開始しました"}
+    if not TERMS:
+        raise HTTPException(409,"私的利用およびデータ取得元の利用条件を確認するまで収集を開始できません")
+    if not start_job():raise HTTPException(409,"すでに収集中です")
+    return {"message":"利用制限を尊重し、公開ページのみの取得を開始しました","started_at":STATE["started"]}
 
 @app.post("/api/manual")
 async def manual(request:Request,authorization:str|None=Header(None)):

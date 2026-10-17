@@ -54,6 +54,8 @@ def robots_policy(timeout: int=12):
             if len(body)>=150_000:
                 raise CollectionError("robots.txt が大きすぎます")
             text=body.decode("utf-8","replace")
+            if not text.strip():
+                raise CollectionError("robots.txt の内容が空です。安全のため取得を停止します")
     except urllib.error.HTTPError as e:
         raise CollectionError("robots.txt がHTTP "+str(e.code)+"を返しました")
     except (urllib.error.URLError,TimeoutError,OSError) as e:

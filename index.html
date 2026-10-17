@@ -68,17 +68,42 @@ nav.bottom button strong{font-size:19px;line-height:23px;font-weight:500}nav.bot
 <div class="controls"><label class="control"><small>店舗を選択</small><select id="store"><option value="all">神奈川5店舗すべて</option></select></label><label class="control"><small>対象日</small><input type="date" id="date"></label></div>
 <div class="notice" id="notice">実データの自動取得は未検証です。表示される数値は取り込まれた実データだけです。データがない場合は0件と表示します。</div>
 <div class="metrics"><div class="metric"><label>集計台数</label><b id="sum-units">—</b></div><div class="metric"><label>集計G数</label><b id="sum-games">—</b></div><div class="metric"><label>機種・店舗の組合せ</label><b id="sum-machines">—</b></div><div class="metric"><label>取得済み店舗数</label><b id="sum-stores">—</b></div></div>
-<div class="tabs" id="top-tabs"><button class="tab active" data-tab="machines">機種別</button><button class="tab" data-tab="units">台別</button><button class="tab" data-tab="suffix">末尾</button><button class="tab" data-tab="history">履歴</button><button class="tab" data-tab="sources">収集状況</button></div>
+<div class="tabs" id="top-tabs"><button class="tab active" data-tab="machines">機種別</button><button class="tab" data-tab="units">台別</button><button class="tab" data-tab="suffix">末尾</button><button class="tab" data-tab="history">履歴</button><button class="tab" data-tab="entry">データ入力</button><button class="tab" data-tab="sources">収集状況</button></div>
 <section class="panel active" id="panel-machines"><div class="sectionheading"><h2>機種別の集計</h2><span id="machine-count" class="pill">—</span></div><div id="machine-list"></div></section>
 <section class="panel" id="panel-units"><div class="sectionheading"><h2>台番号別のデータ</h2><span id="unit-count" class="pill">—</span></div><div id="unit-list"></div></section>
 <section class="panel" id="panel-suffix"><div class="sectionheading"><h2>末尾番号別の集計</h2><span class="help">対象台数・G数</span></div><div id="suffix-list" class="suffixes"></div><p class="legend">台番号の一番右の数字（0〜9）ごとの集計です。高設定の確定を意味しません。</p></section>
 <section class="panel" id="panel-history"><div class="sectionheading"><h2>過去の取得履歴</h2><span class="help">保存済みデータのみ</span></div><div id="history-list"></div></section>
+<section class="panel" id="panel-entry">
+<div class="sectionheading"><h2>台データを登録</h2><span class="pill">自分用</span></div>
+<div class="card">
+<p class="legend" style="margin-top:0">店舗・日付・台番号・機種・ゲーム数を入力すると、機種別・末尾別の集計に反映されます。BB・RB・差枚は空欄でも登録できます。</p>
+<form id="manual-form" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<label class="control" style="grid-column:1/-1"><small>店舗</small><select id="entry-store" required></select></label>
+<label class="control"><small>対象日</small><input id="entry-date" type="date" required></label>
+<label class="control"><small>台番号</small><input id="entry-unit" inputmode="numeric" placeholder="例 521" required></label>
+<label class="control" style="grid-column:1/-1"><small>機種名</small><input id="entry-machine" placeholder="例 マイジャグラーV" required></label>
+<label class="control"><small>通常時ゲーム数</small><input id="entry-games" type="number" min="0" max="150000" placeholder="例 4500" required></label>
+<label class="control"><small>差枚数（任意）</small><input id="entry-diff" type="number" placeholder="例 +1800"></label>
+<label class="control"><small>BB回数（任意）</small><input id="entry-bb" type="number" min="0" placeholder="例 20"></label>
+<label class="control"><small>RB回数（任意）</small><input id="entry-rb" type="number" min="0" placeholder="例 15"></label>
+<button class="btn" style="grid-column:1/-1" type="submit">この台を登録</button>
+</form><p id="entry-message" class="legend" role="status"></p>
+</div>
+<div class="sectionheading"><h2>CSVをまとめて登録</h2></div>
+<div class="card">
+<p class="legend" style="margin:0 0 12px">列名：store_id,date,machine,unit_no,games,bb,rb,diff<br>UTF-8形式のCSVを読み込めます。登録済みの同じ日付・店舗・機種・台番号は上書きされます。</p>
+<input type="file" id="csv-file" accept=".csv,text/csv" style="max-width:100%;margin-bottom:12px;color:#e8edf6">
+<button id="csv-upload" class="btn secondary" type="button">CSVを登録</button>
+<p id="csv-message" class="legend" role="status"></p>
+</div>
+<p class="legend">注意：現在はRenderの無料プラン上に保存します。サーバーの再起動や再配置でデータが失われる場合があります。必要なデータはCSVで保存してください。</p>
+</section>
 <section class="panel" id="panel-sources"><div class="sectionheading"><h2>店舗・収集状況</h2></div><div id="sources-list"></div><div class="sectionheading"><h2>収集の実行履歴</h2></div><div id="logs-list"></div><p class="legend">収集プログラムは未検証のため、初期状態では無効です。取得元の規約の確認とHTML解析の検証が必要です。</p></section>
 <div class="toolrow"><button id="refresh" class="btn">↻ データ更新</button><button id="export" class="btn secondary">↓ 当日のCSV保存</button></div>
 <p class="legend">本サイトは非公式の個人開発ツールです。掲載数値は元データの完全性・正確さを保証しません。設定1〜6の推定や「全台系」の判定は現時点で未実装です。取得元サイトとは無関係です。</p>
 <footer>PALAZZO DATA Kanagawa ・ 掲載情報は検証用ダッシュボードです</footer>
 </main>
-<nav class="bottom" id="bottom-tabs"><button data-tab="machines" class="active"><strong>▤</strong>機種別</button><button data-tab="units"><strong>▦</strong>台別</button><button data-tab="suffix"><strong>◉</strong>末尾</button><button data-tab="history"><strong>◷</strong>履歴</button><button data-tab="sources"><strong>⚙</strong>取得状況</button></nav>
+<nav class="bottom" id="bottom-tabs"><button data-tab="machines" class="active"><strong>▤</strong>機種別</button><button data-tab="units"><strong>▦</strong>台別</button><button data-tab="suffix"><strong>◉</strong>末尾</button><button data-tab="history"><strong>◷</strong>履歴</button><button data-tab="entry"><strong>✎</strong>入力</button><button data-tab="sources"><strong>⚙</strong>取得状況</button></nav>
 <script>
 const $=id=>document.getElementById(id);
 const state={tab:"machines",status:null,data:null};
@@ -107,6 +132,10 @@ $("connection").textContent="通信中…";
 try{const s=await req("/api/status");state.status=s;
 const st=$("store");const old=st.value;st.innerHTML='<option value="all">神奈川5店舗すべて</option>'+s.stores.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join("");st.value=old||"all";
 if(!$("date").value)$("date").value=s.date;
+const e=$("entry-store");const previous=e.value;
+e.innerHTML=s.stores.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join("");
+e.value=previous||s.stores[0]?.id||"";
+if(!$("entry-date").value)$("entry-date").value=s.date;
 const d=await req("/api/data"+q());showData(d);
 $("connection").textContent="サーバー稼働中";$("connection").className="live";
 if(!s.terms_confirmed){$("notice").textContent="出玉データの取得は未稼働です。画面上の「サーバー稼働中」は通信の状態で、実データの収集成功を意味しません。データ取得元の利用条件と機種別ページの形式を確認するまで、自動収集は行いません。"}
@@ -117,6 +146,31 @@ if(state.tab==="history")await loadHistory();if(state.tab==="sources")await load
 document.querySelectorAll("[data-tab]").forEach(btn=>btn.addEventListener("click",()=>changeTab(btn.dataset.tab)));
 $("store").addEventListener("change",refresh);$("date").addEventListener("change",refresh);
 $("refresh").addEventListener("click",refresh);$("export").addEventListener("click",()=>{const date=encodeURIComponent($("date").value);location.href="/api/export?day="+date});
+$("manual-form").addEventListener("submit",async ev=>{
+ ev.preventDefault();const msg=$("entry-message");msg.textContent="登録中…";
+ const get=(id)=>$(id).value.trim();
+ const values={store_id:get("entry-store"),date:get("entry-date"),machine:get("entry-machine"),unit_no:get("entry-unit"),games:get("entry-games"),bb:get("entry-bb"),rb:get("entry-rb"),diff:get("entry-diff")};
+ try{
+  const r=await fetch("/api/manual",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(values)});
+  const d=await r.json();if(!r.ok)throw Error(d.detail||"HTTP "+r.status);
+  msg.textContent="登録しました。対象日のデータを表示できます。";
+  $("date").value=values.date;$("store").value=values.store_id;
+  $("entry-unit").value="";$("entry-games").value="";$("entry-bb").value="";$("entry-rb").value="";$("entry-diff").value="";
+  await refresh();changeTab("units");
+ }catch(e){msg.textContent="登録できません："+e.message;}
+});
+$("csv-upload").addEventListener("click",async ()=>{
+ const file=$("csv-file").files[0];const msg=$("csv-message");
+ if(!file){msg.textContent="CSVファイルを選択してください";return}
+ msg.textContent="読み込み中…";
+ try{
+  if(file.size>2e6)throw Error("ファイルが大きすぎます");
+  const content=await file.arrayBuffer();
+  const r=await fetch("/api/import-csv",{method:"POST",headers:{"Content-Type":"text/csv; charset=utf-8"},body:content});
+  const d=await r.json();if(!r.ok)throw Error(d.detail||"HTTP "+r.status);
+  msg.textContent=d.saved+"件を登録しました。";await refresh();
+ }catch(e){msg.textContent="登録できません："+e.message;}
+});
 refresh();
 </script>
 </body></html>

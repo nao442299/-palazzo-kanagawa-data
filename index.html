@@ -98,7 +98,9 @@ nav.bottom button strong{font-size:19px;line-height:23px;font-weight:500}nav.bot
 </div>
 <p class="legend">注意：現在はRenderの無料プラン上に保存します。サーバーの再起動や再配置でデータが失われる場合があります。必要なデータはCSVで保存してください。</p>
 </section>
-<section class="panel" id="panel-sources"><div class="sectionheading"><h2>店舗・収集状況</h2></div><div id="sources-list"></div><div class="sectionheading"><h2>収集の実行履歴</h2></div><div id="logs-list"></div><p class="legend">収集プログラムは未検証のため、初期状態では無効です。取得元の規約の確認とHTML解析の検証が必要です。</p></section>
+<section class="panel" id="panel-sources"><div class="sectionheading"><h2>接続診断</h2></div>
+<div id="diagnostic-status" class="card"><span class="mini">診断中…</span></div>
+<div class="sectionheading"><h2>店舗・収集状況</h2></div><div id="sources-list"></div><div class="sectionheading"><h2>収集の実行履歴</h2></div><div id="logs-list"></div><p class="legend">収集プログラムは未検証のため、初期状態では無効です。取得元の規約の確認とHTML解析の検証が必要です。</p></section>
 <div class="toolrow"><button id="refresh" class="btn">↻ データ更新</button><button id="export" class="btn secondary">↓ 当日のCSV保存</button></div>
 <p class="legend">本サイトは非公式の個人開発ツールです。掲載数値は元データの完全性・正確さを保証しません。設定1〜6の推定や「全台系」の判定は現時点で未実装です。取得元サイトとは無関係です。</p>
 <footer>PALAZZO DATA Kanagawa ・ 掲載情報は検証用ダッシュボードです</footer>
@@ -125,7 +127,12 @@ $("suffix-list").innerHTML=d.suffixes.map(v=>'<div class="suffix"><div class="di
 async function loadHistory(){
 try{const d=await req("/api/history?store="+encodeURIComponent($("store").value));$("history-list").innerHTML=d.rows.length?d.rows.map(u=>box(u.date,u.store_id,null,[["台数",fmt(u.units)],["総G",fmt(u.games)],["差枚",u.diff==null?"—":fmt(u.diff)],["店舗","1"]])).join(""):empty("保存済みの履歴はありません","データ取得後に日付ごとの履歴を確認できます。")}catch(e){$("history-list").innerHTML=empty("読み込みエラー",e.message)}}
 async function loadSources(){
-try{const s=state.status||await req("/api/status");$("sources-list").innerHTML=s.stores.map(x=>'<div class="card"><div class="cardhead"><div><div class="name">'+esc(x.name)+'</div><div class="mini">公開データページ：<a target="_blank" rel="noopener" href="'+esc(x.url)+'">'+esc(x.source_id)+'</a></div></div><span class="tag '+(x.units?"ok":"warn")+'">'+(x.units?"保存済み":"未取得")+'</span></div><div class="mini">保存台数 '+fmt(x.units)+'件 ／ 取得日数 '+fmt(x.days)+'日 ／ 最新 '+esc(x.latest||"—")+'</div></div>').join("");
+try{const s=state.status||await req("/api/status");
+const diagnostic=s.diagnostic;
+$("diagnostic-status").innerHTML=diagnostic?
+ '<div class="name">'+(diagnostic.ok?'robots.txt の確認完了':'外部サイトへの接続ができません')+'</div><p class="legend">'+esc(diagnostic.message)+'</p><div class="mini">診断：'+esc(diagnostic.checked_at||"—")+'<br>診断が成功しても自動収集の成功を意味しません。</div>'
+ :'<div class="mini">起動直後の診断を待っています。しばらくしてから「データ更新」を押してください。</div>';
+$("sources-list").innerHTML=s.stores.map(x=>'<div class="card"><div class="cardhead"><div><div class="name">'+esc(x.name)+'</div><div class="mini">公開データページ：<a target="_blank" rel="noopener" href="'+esc(x.url)+'">'+esc(x.source_id)+'</a></div></div><span class="tag '+(x.units?"ok":"warn")+'">'+(x.units?"保存済み":"未取得")+'</span></div><div class="mini">保存台数 '+fmt(x.units)+'件 ／ 取得日数 '+fmt(x.days)+'日 ／ 最新 '+esc(x.latest||"—")+'</div></div>').join("");
 const h=await req("/api/logs");$("logs-list").innerHTML=h.rows.length?h.rows.map(v=>'<div class="log '+(v.status==="ok"?"ok":"error")+'"><b>'+esc(v.created_at)+' / '+esc(v.store_id)+'</b><p>'+esc(v.status)+' ・ '+fmt(v.records)+'件 ・ '+esc(v.message)+'</p></div>').join(""):empty("収集履歴はありません","自動収集はまだ実行されていません。")}catch(e){$("logs-list").innerHTML=empty("読み込みエラー",e.message)}}
 async function refresh(){
 $("connection").textContent="通信中…";

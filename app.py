@@ -20,6 +20,7 @@ from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 import collector as site_collector
+import text_import
 from fastapi import FastAPI, HTTPException, Header, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, Response
 
@@ -352,3 +353,26 @@ async def manual(request:Request,authorization:str|None=Header(None)):
             raise HTTPException(400,k+"の数字が不正です")
         values[k]=value
     return {"saved":store_rows([values],"manual")}
+
+@app.post("/api/import-text")
+async def import_text(request:Request,authorization:str|None=Header(None)):
+    check_token(authorization)
+    if int(request.headers.get("content-length","0") or 0)>700000:
+        raise HTTPException(413,"テキストが大きすぎます")
+    try:
+        data=await request.json()
+    except Exception:
+        raise HTTPException(400,"入力内容を確認してください")
+    if not isinstance(data,dict):
+        raise HTTPException(400,"入力内容が正しくありません")
+    store_id=data.get("store_id")
+    if store_id not in STORE_MAP:
+        raise HTTPException(400,"店舗を指定してください")
+    day=valid_date(data.get("date"))
+    try:
+        records,notes=text_import.parse_text(data.get("text",""),store_id,day)
+    except ValueError as exc:
+        raise HTTPException(400,str(exc))
+    saved=store_rows(records,"manual-paste")
+    log_run(store_id,"manual_paste",saved,"台番別の表を手動登録")
+    return {"saved":saved,"notes":notes,"date":day,"store_id":store_id}

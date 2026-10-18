@@ -212,6 +212,7 @@ async def lifespan(app):
     def probe():
         result=site_collector.diagnostics()
         STATE["diagnostic"]=dict(result,checked_at=now())
+        print("[collector-diagnostic] "+ ("OK " if result.get("ok") else "BLOCKED ") + str(result.get("message",""))[:220],flush=True)
         log_run("system","robots_ok" if result.get("ok") else "robots_error",0,result.get("message",""))
     threading.Thread(target=probe,daemon=True).start()
     task=asyncio.create_task(automatic()) if TERMS and AUTO else None

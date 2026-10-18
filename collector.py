@@ -217,6 +217,32 @@ def scan_one(store, robots, date):
     return {"rows":list(unique.values()),"scanned":reader.requests,"linked":len(to_check),
             "note":"到達できた機種別ページを収集" if unique else "該当ヘッダーの台データ表が見つかりません"}
 
+def alternative_diagnostics():
+    """Check public robots.txt without requesting report pages."""
+    results={}
+    for host in ("slodata-lab.com","www.slodata-lab.com","ana-slo.com","slo-navi.com"):
+        url="https://"+host+"/robots.txt"
+        req=urllib.request.Request(url,headers={"User-Agent":UA})
+        try:
+            with urllib.request.urlopen(req,timeout=10) as response:
+                code=response.status
+                body=response.read(150000).decode("utf-8","replace")
+                if code!=200:
+                    results[host]={"status":"blocked","message":"HTTP "+str(code)}
+                    continue
+                if not body.strip():
+                    results[host]={"status":"unknown","message":"robots.txtが空です"}
+                    continue
+                policy=urllib.robotparser.RobotFileParser()
+                policy.parse(body.splitlines())
+                sample="https://"+host+"/pages/reports/report-slot-2026-07-26-3251615-6eb51694.html"
+                results[host]={"status":"ok","can_fetch_reports":policy.can_fetch(UA,sample)}
+        except urllib.error.HTTPError as error:
+            results[host]={"status":"blocked","message":"HTTP "+str(error.code)}
+        except Exception as error:
+            results[host]={"status":"error","message":str(error)[:140]}
+    return results
+
 def diagnostics():
     """A single robots.txt request. No page access or bypass."""
     try:

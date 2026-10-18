@@ -220,7 +220,7 @@ def scan_one(store, robots, date):
 def alternative_diagnostics():
     """Check public robots.txt without requesting report pages."""
     results={}
-    for host in ("slodata-lab.com","www.slodata-lab.com","ana-slo.com","slo-navi.com"):
+    for host in ("slodata-lab.com","www.slodata-lab.com","ana-slo.com","slo-navi.com","slo-map.com","www.slo-map.com"):
         url="https://"+host+"/robots.txt"
         req=urllib.request.Request(url,headers={"User-Agent":UA})
         try:
@@ -235,7 +235,7 @@ def alternative_diagnostics():
                     continue
                 policy=urllib.robotparser.RobotFileParser()
                 policy.parse(body.splitlines())
-                sample="https://"+host+"/pages/reports/report-slot-2026-07-26-3251615-6eb51694.html"
+                sample="https://"+host+("/halls/13086/data/2026-10-12" if "slo-map" in host else "/pages/reports/report-slot-2026-07-26-3251615-6eb51694.html")
                 results[host]={"status":"ok","can_fetch_reports":policy.can_fetch(UA,sample)}
         except urllib.error.HTTPError as error:
             results[host]={"status":"blocked","message":"HTTP "+str(error.code)}

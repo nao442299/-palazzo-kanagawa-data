@@ -89,6 +89,19 @@ nav.bottom button strong{font-size:19px;line-height:23px;font-weight:500}nav.bot
 <button class="btn" style="grid-column:1/-1" type="submit">この台を登録</button>
 </form><p id="entry-message" class="legend" role="status"></p>
 </div>
+<div class="sectionheading"><h2>公開レポートの表を一括入力</h2><span class="pill">新機能</span></div>
+<div class="card">
+<p class="legend" style="margin:0 0 12px">公開レポートの「全台データ一覧・差枚ランキング」を選択してコピーし、以下に貼り付けてください。1回で複数台を登録できます。店舗と対象日は上の入力欄で指定します。</p>
+<label style="font-size:12px;color:#c7d5e9;display:block;margin-bottom:6px" for="paste-table">台番別の表（順位・台番・機種・差枚・G数）</label>
+<textarea id="paste-table" placeholder="順位 | 台番 | 機種 | 差枚/差玉 | G数 | 出率 ...&#10;1 | 760 | 戦国コレクション6 | +12,139 | 8,114 | 149.9% ..." rows="7" style="display:block;width:100%;font:inherit;background:#101a2a;color:#eef4fc;border:1px solid #445979;border-radius:10px;padding:12px;resize:vertical;outline:0;margin:0 0 12px"></textarea>
+<button id="paste-upload" class="btn" type="button">貼り付けた台データを一括登録</button>
+<p id="paste-message" class="legend" role="status"></p>
+</div>
+<div class="sectionheading"><h2>参考になる公開レポート</h2></div>
+<div class="card">
+<p class="legend" style="margin-top:0">過去の掲載例です。各ページの日付を確認してから取り込んでください。サイトの自動収集や転載は行いません。</p>
+<div id="alt-reports" class="legend" style="line-height:2.2"></div>
+</div>
 <div class="sectionheading"><h2>CSVをまとめて登録</h2></div>
 <div class="card">
 <p class="legend" style="margin:0 0 12px">列名：store_id,date,machine,unit_no,games,bb,rb,diff<br>UTF-8形式のCSVを読み込めます。登録済みの同じ日付・店舗・機種・台番号は上書きされます。</p>
@@ -121,13 +134,19 @@ state.data=d;$("sum-units").textContent=fmt(d.total_units);$("sum-games").textCo
 $("sum-stores").textContent=fmt(new Set(d.units.map(u=>u.store_id)).size);
 $("machine-count").textContent=fmt(d.machines.length)+"機種";$("unit-count").textContent=fmt(d.units.length)+"台";
 $("machine-list").innerHTML=d.machines.length?d.machines.map(u=>box(u.machine,u.store_name,u.count+"台",[["通常時G",fmt(u.games)],["RB",fmt(u.rb)],["RB確率",u.rb_rate?"1/"+u.rb_rate:"—"],["BB+RB",u.total_rate?"1/"+u.total_rate:"—"]])).join(""):empty("この日の機種データはありません","対象の日付を変更するか、「取得状況」からデータ収集の状態を確認してください。");
-$("unit-list").innerHTML=d.units.length?d.units.map(u=>box(u.machine,u.store_id+" ・ 台番号 "+u.unit_no,u.source==="csv"?"CSV":"取得",[["通常時G",fmt(u.games)],["BB",u.bb===null?"—":fmt(u.bb)],["RB",u.rb===null?"—":fmt(u.rb)],["差枚",u.diff===null?"—":fmt(u.diff)]] )).join(""):empty("台番号別データはありません","まだデータが登録されていません。");
+$("unit-list").innerHTML=d.units.length?d.units.map(u=>box(u.machine,u.store_id+" ・ 台番号 "+u.unit_no,u.source==="csv"?"CSV":u.source==="manual-paste"?"貼付":u.source==="manual"?"手入力":"取得",[["通常時G",fmt(u.games)],["BB",u.bb===null?"—":fmt(u.bb)],["RB",u.rb===null?"—":fmt(u.rb)],["差枚",u.diff===null?"—":fmt(u.diff)]] )).join(""):empty("台番号別データはありません","まだデータが登録されていません。");
 $("suffix-list").innerHTML=d.suffixes.map(v=>'<div class="suffix"><div class="digit">'+v.suffix+'</div><div class="count">'+fmt(v.count)+'台</div><div class="games">'+fmt(v.games)+'G</div></div>').join("");
 }
 async function loadHistory(){
 try{const d=await req("/api/history?store="+encodeURIComponent($("store").value));$("history-list").innerHTML=d.rows.length?d.rows.map(u=>box(u.date,u.store_id,null,[["台数",fmt(u.units)],["総G",fmt(u.games)],["差枚",u.diff==null?"—":fmt(u.diff)],["店舗","1"]])).join(""):empty("保存済みの履歴はありません","データ取得後に日付ごとの履歴を確認できます。")}catch(e){$("history-list").innerHTML=empty("読み込みエラー",e.message)}}
 async function loadSources(){
 try{const s=state.status||await req("/api/status");
+const alt=s.alternatives;
+const altEntries=alt?Object.entries(alt).filter(([k])=>k!=="checked_at"):[];
+if(altEntries.length){
+ const hasAllowed=altEntries.filter(([k,v])=>v.status==="ok"&&v.can_fetch_reports).map(([k])=>k);
+ $("diagnostic-status").dataset.alt=hasAllowed.join(",");
+}
 const diagnostic=s.diagnostic;
 $("diagnostic-status").innerHTML=diagnostic?
  '<div class="name">'+(diagnostic.ok?'robots.txt の確認完了':'外部サイトへの接続ができません')+'</div><p class="legend">'+esc(diagnostic.message)+'</p><div class="mini">診断：'+esc(diagnostic.checked_at||"—")+'<br>診断が成功しても自動収集の成功を意味しません。</div>'
@@ -165,6 +184,25 @@ $("manual-form").addEventListener("submit",async ev=>{
   $("entry-unit").value="";$("entry-games").value="";$("entry-bb").value="";$("entry-rb").value="";$("entry-diff").value="";
   await refresh();changeTab("units");
  }catch(e){msg.textContent="登録できません："+e.message;}
+});
+$("alt-reports").innerHTML=[
+ ["fujisawa","パラッツォ藤沢南店／8月20日","https://slodata-lab.com/pages/reports/report-slot-2026-08-20-3301691-02de539e.html"],
+ ["tsurugamine","パラッツォ鶴ヶ峰店／7月26日","https://slodata-lab.com/pages/reports/report-slot-2026-07-26-3251615-6eb51694.html"],
+ ["tsurugamine_slot","鶴ヶ峰スロット館／8月20日","https://slodata-lab.com/pages/reports/report-slot-2026-08-20-3301573-1a9acfd8.html"],
+ ["shonandai","パラッツォ湘南台店／7月4日","https://slodata-lab.com/pages/reports/report-anaslo-12072238-36628a3d.html"],
+ ["hadano","パラッツォ秦野渋沢店／過去一覧","https://www.slodata-lab.com/pages/halls/hall-2498860d.html"]
+].map(([id,label,url])=>'<div><a target="_blank" rel="noopener noreferrer" href="'+url+'">↗ '+esc(label)+'</a></div>').join("");
+$("paste-upload").addEventListener("click",async ()=>{
+ const msg=$("paste-message");const body={store_id:$("entry-store").value,date:$("entry-date").value,text:$("paste-table").value};
+ if(!body.text.trim()){msg.textContent="レポートの台番別表を貼り付けてください。";return}
+ msg.textContent="解析・登録中…";
+ try{
+   const r=await fetch("/api/import-text",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+   const d=await r.json();if(!r.ok)throw Error(d.detail||("HTTP "+r.status));
+   msg.textContent=d.saved+"台を登録しました。"+(d.notes?.length?" 注意："+d.notes.join("／"):"");
+   $("date").value=body.date;$("store").value=body.store_id;
+   await refresh();changeTab("units");
+ }catch(e){msg.textContent="取り込めませんでした："+e.message}
 });
 $("csv-upload").addEventListener("click",async ()=>{
  const file=$("csv-file").files[0];const msg=$("csv-message");

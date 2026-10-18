@@ -113,6 +113,7 @@ nav.bottom button strong{font-size:19px;line-height:23px;font-weight:500}nav.bot
 </section>
 <section class="panel" id="panel-sources"><div class="sectionheading"><h2>接続診断</h2></div>
 <div id="diagnostic-status" class="card"><span class="mini">診断中…</span></div>
+<div id="alternative-status" class="card"><span class="mini">代替サイトへの接続状況を確認中…</span></div>
 <div class="sectionheading"><h2>店舗・収集状況</h2></div><div id="sources-list"></div><div class="sectionheading"><h2>収集の実行履歴</h2></div><div id="logs-list"></div><p class="legend">収集プログラムは未検証のため、初期状態では無効です。取得元の規約の確認とHTML解析の検証が必要です。</p></section>
 <div class="toolrow"><button id="refresh" class="btn">↻ データ更新</button><button id="export" class="btn secondary">↓ 当日のCSV保存</button></div>
 <p class="legend">本サイトは非公式の個人開発ツールです。掲載数値は元データの完全性・正確さを保証しません。設定1〜6の推定や「全台系」の判定は現時点で未実装です。取得元サイトとは無関係です。</p>
@@ -147,6 +148,10 @@ if(altEntries.length){
  const hasAllowed=altEntries.filter(([k,v])=>v.status==="ok"&&v.can_fetch_reports).map(([k])=>k);
  $("diagnostic-status").dataset.alt=hasAllowed.join(",");
 }
+$("alternative-status").innerHTML=altEntries.length?
+ '<div class="name">代替サイトの接続結果</div>'+altEntries.map(([host,result])=>'<div class="mini" style="padding:7px 0;border-bottom:1px solid #2c3b56">'+esc(host)+'：'+esc(result.status==='ok'?(result.can_fetch_reports?'robots.txt上は参照可':'robots.txt上は対象ページ不可'):(result.message||result.status))+'</div>').join('')+
+ '<p class="legend">接続診断の結果です。自動収集の許可や正常動作を保証しません。</p>'
+ :'<div class="mini">代替サイトの接続診断を確認中です。</div>';
 const diagnostic=s.diagnostic;
 $("diagnostic-status").innerHTML=diagnostic?
  '<div class="name">'+(diagnostic.ok?'robots.txt の確認完了':'外部サイトへの接続ができません')+'</div><p class="legend">'+esc(diagnostic.message)+'</p><div class="mini">診断：'+esc(diagnostic.checked_at||"—")+'<br>診断が成功しても自動収集の成功を意味しません。</div>'
@@ -190,7 +195,11 @@ $("alt-reports").innerHTML=[
  ["tsurugamine","パラッツォ鶴ヶ峰店／7月26日","https://slodata-lab.com/pages/reports/report-slot-2026-07-26-3251615-6eb51694.html"],
  ["tsurugamine_slot","鶴ヶ峰スロット館／8月20日","https://slodata-lab.com/pages/reports/report-slot-2026-08-20-3301573-1a9acfd8.html"],
  ["shonandai","パラッツォ湘南台店／7月4日","https://slodata-lab.com/pages/reports/report-anaslo-12072238-36628a3d.html"],
- ["hadano","パラッツォ秦野渋沢店／過去一覧","https://www.slodata-lab.com/pages/halls/hall-2498860d.html"]
+ ["hadano","パラッツォ秦野渋沢店／過去一覧","https://www.slodata-lab.com/pages/halls/hall-2498860d.html"
+ ,["slo-fujisawa","【最近の傾向】パラッツォ藤沢南店","https://slo-map.com/halls/4811"]
+ ,["slo-tsurugamine","【最近の傾向】パラッツォ鶴ヶ峰店","https://slo-map.com/halls/4551"]
+ ,["slo-shonandai","【最近の傾向】パラッツォ湘南台店","https://slo-map.com/halls/13085"]
+ ,["slo-hadano","【最近の傾向】パラッツォ秦野渋沢店","https://slo-map.com/halls/13086"]]
 ].map(([id,label,url])=>'<div><a target="_blank" rel="noopener noreferrer" href="'+url+'">↗ '+esc(label)+'</a></div>').join("");
 $("paste-upload").addEventListener("click",async ()=>{
  const msg=$("paste-message");const body={store_id:$("entry-store").value,date:$("entry-date").value,text:$("paste-table").value};

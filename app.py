@@ -41,7 +41,7 @@ for store in STORES:
     store["url"] = "https://daidata.goraggio.com/" + store["source_id"]
 STORE_MAP = {s["id"]:s for s in STORES}
 LOCK = threading.Lock()
-STATE = {"running":False,"started":None,"result":None,"diagnostic":None}
+STATE = {"running":False,"started":None,"result":None,"diagnostic":None,"alternatives":None}
 HEADERS = {"User-Agent":"PalazzoKanagawaResearch/1.0 (respect robots.txt; low-rate personal research)"}
 
 def now():
@@ -214,6 +214,10 @@ async def lifespan(app):
         STATE["diagnostic"]=dict(result,checked_at=now())
         print("[collector-diagnostic] "+ ("OK " if result.get("ok") else "BLOCKED ") + str(result.get("message",""))[:220],flush=True)
         log_run("system","robots_ok" if result.get("ok") else "robots_error",0,result.get("message",""))
+        alt=site_collector.alternative_diagnostics()
+        STATE["alternatives"]=dict(alt,checked_at=now())
+        print("[alternative-diagnostic] "+str(alt)[:800],flush=True)
+        log_run("system","alternative_probe",0,str(alt)[:800])
     threading.Thread(target=probe,daemon=True).start()
     task=asyncio.create_task(automatic()) if TERMS and AUTO else None
     yield
@@ -239,7 +243,7 @@ def status():
     counts=rows("SELECT store_id,COUNT(*) units,COUNT(DISTINCT date) days,MAX(date) latest FROM units GROUP BY store_id")
     latest={x["store_id"]:x for x in counts}
     return {"date":today(),"running":STATE["running"],"last_result":STATE["result"],
-    "terms_confirmed":TERMS,"auto_collect":AUTO,"admin_ready":bool(TOKEN or SITE_PASSWORD),"diagnostic":STATE["diagnostic"],
+    "terms_confirmed":TERMS,"auto_collect":AUTO,"admin_ready":bool(TOKEN or SITE_PASSWORD),"diagnostic":STATE["diagnostic"],"alternatives":STATE["alternatives"],
     "stores":[dict(s,units=latest.get(s["id"],{}).get("units",0),
     days=latest.get(s["id"],{}).get("days",0),
     latest_date=latest.get(s["id"],{}).get("latest")) for s in STORES]}
